@@ -1,2 +1,2 @@
 # cli
-Utilities for creating complex CLI
+Utilities for creating complex CLI application in Go.
