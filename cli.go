@@ -21,14 +21,11 @@
 package cli
 
 import (
-	"bufio"
 	"flag"
 	"io"
 	"os"
 	"strings"
 	"text/template"
-	"unicode"
-	"unicode/utf8"
 )
 
 // Component represents a command line component
@@ -52,6 +49,10 @@ type Component struct {
 
 	// Long is the longer more detailed description of the component
 	Long string
+
+	// usageOutput is the write where the usage function will render its output
+	// into. nil means stderr
+	usageOutput io.Writer
 }
 
 // Name returns the name of the component: the first word in the UsageLine
@@ -69,6 +70,13 @@ func (c *Component) Runnable() bool {
 	return nil != c.Run
 }
 
+// SetUsageOutput sets the destination for usage messages.
+// If output is nil, stderr is used
+func (c *Component) SetUsageOutput(output io.Writer) {
+	c.usageOutput = output
+	c.Flag.SetOutput(output)
+}
+
 var usageTemplate = `{{if .Runnable}}Usage: {{.UsageLine}}
 {{end}}{{.Long | trim}}
 {{if ne (len .Components) 0}}
@@ -79,27 +87,23 @@ The components are:
 
 // Usage prints out the usage information
 func (c *Component) Usage() {
-	bw := bufio.NewWriter(os.Stdout)
+	bw := c.out()
 	tmpl(bw, usageTemplate, c)
-	bw.Flush()
 
 	c.Flag.PrintDefaults()
 }
 
-func capitalize(s string) string {
-	if "" == s {
-		return s
+func (c *Component) out() io.Writer {
+	if nil == c.usageOutput {
+		return os.Stderr
 	}
-
-	r, n := utf8.DecodeRuneInString(s)
-	return string(unicode.ToTitle(r)) + s[n:]
+	return c.usageOutput
 }
 
 func tmpl(w io.Writer, text string, data interface{}) {
 	t := template.New("top")
 	t.Funcs(template.FuncMap{
-		"trim":       strings.TrimSpace,
-		"capitalize": capitalize,
+		"trim": strings.TrimSpace,
 	})
 	template.Must(t.Parse(text))
 	t.Execute(w, data)
