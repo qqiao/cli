@@ -21,6 +21,7 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"io"
 	"os"
@@ -38,7 +39,7 @@ type Component struct {
 
 	// Run runs the component
 	// args are the arguments after the component name
-	Run func(comp *Component, args []string)
+	Run func(ctx context.Context, comp *Component, args []string)
 
 	// UsageLine is the one-line usage message.
 	// The first word in the line is taken to be the component name

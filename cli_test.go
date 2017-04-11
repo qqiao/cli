@@ -16,6 +16,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -50,7 +51,7 @@ func TestSetUsageOutput(t *testing.T) {
 
 func TestRunnable(t *testing.T) {
 	r := Component{
-		Run: func(*Component, []string) {},
+		Run: func(context.Context, *Component, []string) {},
 	}
 	if !r.Runnable() {
 		t.Errorf("Expected '%t', got '%t'", true, r.Runnable())
@@ -87,7 +88,7 @@ func TestUsageRunnable(t *testing.T) {
 	}
 
 	buf.Reset()
-	c.Run = func(*Component, []string) {}
+	c.Run = func(context.Context, *Component, []string) {}
 	c.Usage()
 	usage = buf.String()
 	if !strings.HasPrefix(usage, expectedUsageLine) {
