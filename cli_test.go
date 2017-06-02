@@ -23,11 +23,11 @@ import (
 	"testing"
 )
 
-const usageLine = `test [-i] input`
+const usageLine = `test [-i input]`
 
 func TestName(t *testing.T) {
 	c := Component{
-		UsageLine: "test [-i] input",
+		UsageLine: usageLine,
 	}
 
 	if "test" != c.Name() {
@@ -66,9 +66,24 @@ func TestRunnable(t *testing.T) {
 func TestUsageFlags(t *testing.T) {
 	var buf bytes.Buffer
 
-	c := Component{}
+	c := Component{
+		UsageLine: usageLine,
+		Run:       func(context.Context, *Component, []string) {},
+	}
 	c.SetUsageOutput(&buf)
 	c.Flag.String("i", "", "input of the test component")
+	c.Usage()
+
+	expected := `Usage: test [-i input]
+
+
+  -i string
+    	input of the test component
+`
+
+	if buf.String() != expected {
+		t.Errorf("Expected '%s'. got '%s'", expected, buf.String())
+	}
 }
 
 func TestUsageRunnable(t *testing.T) {
