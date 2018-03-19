@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 )
@@ -32,20 +31,6 @@ func TestName(t *testing.T) {
 
 	if "test" != c.Name() {
 		t.Errorf("Expected '%s', got '%s'", "test", c.Name())
-	}
-}
-
-func TestSetUsageOutput(t *testing.T) {
-	c := Component{}
-
-	if os.Stderr != c.out() {
-		t.Error("Expected os.Stderr to be the output")
-	}
-
-	var output bytes.Buffer
-	c.SetUsageOutput(&output)
-	if &output != c.out() {
-		t.Error("SetUsageOutput failed")
 	}
 }
 
@@ -70,7 +55,7 @@ func TestUsageFlags(t *testing.T) {
 		UsageLine: usageLine,
 		Run:       func(context.Context, *Component, []string) {},
 	}
-	c.SetUsageOutput(&buf)
+	c.SetOutput(&buf)
 	c.Flag.String("i", "", "input of the test component")
 	c.Usage()
 
@@ -94,7 +79,7 @@ func TestUsageRunnable(t *testing.T) {
 		UsageLine: usageLine,
 		Long:      "This is the long description of the test component.",
 	}
-	c.SetUsageOutput(&buf)
+	c.SetOutput(&buf)
 
 	c.Usage()
 	usage := buf.String()
