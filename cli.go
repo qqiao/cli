@@ -73,7 +73,7 @@ func (c *Component) SetOutput(output io.Writer) {
 }
 
 var usageTemplate = `{{if .Runnable}}Usage: {{.UsageLine}}
-{{end}}{{.Long | trim}}
+{{end}}{{if ne (len .Long) 0}}{{.Long | trim}}{{end}}
 {{if ne (len .Components) 0}}
 The components are:
 {{range .Components}}{{if .Runnable}}
