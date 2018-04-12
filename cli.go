@@ -87,6 +87,32 @@ func (c *Component) Usage() {
 	c.Flag.PrintDefaults()
 }
 
+// Passthrough is a implementation of the Run function that passes the
+// execution through the sub commands
+func Passthrough(ctx context.Context, component *Component, args []string) {
+	if flag.ErrHelp == component.Flag.Parse(args) {
+		return
+	}
+
+	if component.Flag.NArg() < 1 {
+		component.Flag.Usage()
+		return
+	}
+
+	name := component.Flag.Arg(0)
+
+	for _, comp := range component.Components {
+		if name == comp.Name() {
+			if comp.Runnable() {
+				comp.Flag.Usage = comp.Usage
+				comp.Run(ctx, comp, args[1:])
+				return
+			}
+		}
+	}
+	component.Flag.Usage()
+}
+
 func tmpl(w io.Writer, text string, data interface{}) {
 	t := template.New("top")
 	t.Funcs(template.FuncMap{
