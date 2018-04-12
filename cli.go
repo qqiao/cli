@@ -105,7 +105,7 @@ func Passthrough(ctx context.Context, component *Component, args []string) {
 		if name == comp.Name() {
 			if comp.Runnable() {
 				comp.Flag.Usage = comp.Usage
-				comp.Run(ctx, comp, comp.Flag.Args()[1:])
+				comp.Run(ctx, comp, component.Flag.Args()[1:])
 				return
 			}
 		}
