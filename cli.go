@@ -77,7 +77,7 @@ var usageTemplate = `{{if .Runnable}}Usage: {{.UsageLine}}
 {{if ne (len .Components) 0}}
 The components are:
 {{range .Components}}{{if .Runnable}}
-    {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}{{end}}
+  {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}{{end}}
 `
 
 // Usage prints out the usage information
