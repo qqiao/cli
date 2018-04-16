@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/qqiao/cli.svg?branch=master)](https://travis-ci.org/qqiao/cli)
+[![Build Status](https://circleci.com/gh/qqiao/cli.svg?style=svg)](https://circleci.com/gh/qqiao/cli)
 
 # cli
 Utilities for creating complex CLI application in Go.
