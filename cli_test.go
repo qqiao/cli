@@ -56,12 +56,12 @@ func TestUsageFlags(t *testing.T) {
 		Run:       func(context.Context, *Component, []string) {},
 	}
 	c.SetOutput(&buf)
-	c.Flag.String("i", "", "input of the test component")
+	c.FlagSet().String("i", "", "input of the test component")
 	c.Usage()
 
 	expected := `Usage: test [-i input]
 
-
+The flags are:
   -i string
     	input of the test component
 `

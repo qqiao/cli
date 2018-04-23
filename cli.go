@@ -21,6 +21,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"io"
@@ -32,9 +33,6 @@ import (
 type Component struct {
 	// Components are the sub-components of the current component
 	Components []*Component
-
-	// Flag is a set of flags specific to this component
-	Flag flag.FlagSet
 
 	// Run runs the component
 	// args are the arguments after the component name
@@ -49,6 +47,19 @@ type Component struct {
 
 	// Long is the longer more detailed description of the component
 	Long string
+
+	// flagSet is a set of flags specific to this component
+	flagSet *flag.FlagSet
+}
+
+// FlagSet returns the set of command line flags
+func (c *Component) FlagSet() *flag.FlagSet {
+	if nil == c.flagSet {
+		c.flagSet = flag.NewFlagSet(c.Name(), flag.ExitOnError)
+		c.flagSet.Usage = c.Usage
+	}
+
+	return c.flagSet
 }
 
 // Name returns the name of the component: the first word in the UsageLine
@@ -69,48 +80,58 @@ func (c *Component) Runnable() bool {
 // SetOutput sets the destination for usage messages.
 // If output is nil, stderr is used
 func (c *Component) SetOutput(output io.Writer) {
-	c.Flag.SetOutput(output)
+	c.FlagSet().SetOutput(output)
 }
 
-var usageTemplate = `{{if .Runnable}}Usage: {{.UsageLine}}
-{{end}}{{if ne (len .Long) 0}}{{.Long | trim}}{{end}}
-{{if ne (len .Components) 0}}
+var usageTemplate = `{{if .component.Runnable}}Usage: {{.component.UsageLine}}{{end}}
+{{- if ne (len .component.Long) 0}}{{.component.Long | trim}}{{end}}
+{{- if ne (len .component.Components) 0}}
 The components are:
-{{range .Components}}{{if .Runnable}}
+{{range .component.Components}}{{if .Runnable}}
   {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}{{end}}
-`
+{{if ne (len .flags) 0}}
+The flags are:
+{{.flags}}{{end}}`
 
 // Usage prints out the usage information
 func (c *Component) Usage() {
-	tmpl(c.Flag.Output(), usageTemplate, c)
+	output := c.flagSet.Output()
 
-	c.Flag.PrintDefaults()
+	buf := bytes.NewBufferString("")
+	c.flagSet.SetOutput(buf)
+	c.flagSet.PrintDefaults()
+
+	c.flagSet.SetOutput(output)
+
+	tmpl(output, usageTemplate, map[string]interface{}{
+		"component": c,
+		"flags":     buf.String(),
+	})
 }
 
 // Passthrough is a implementation of the Run function that passes the
 // execution through the sub commands
 func Passthrough(ctx context.Context, component *Component, args []string) {
-	if flag.ErrHelp == component.Flag.Parse(args) {
+	if flag.ErrHelp == component.FlagSet().Parse(args) {
 		return
 	}
 
-	if component.Flag.NArg() < 1 {
-		component.Flag.Usage()
+	if component.FlagSet().NArg() < 1 {
+		component.FlagSet().Usage()
 		return
 	}
 
-	name := component.Flag.Arg(0)
+	name := component.FlagSet().Arg(0)
 
 	for _, comp := range component.Components {
 		if name == comp.Name() {
 			if comp.Runnable() {
-				comp.Flag.Usage = comp.Usage
-				comp.Run(ctx, comp, component.Flag.Args()[1:])
+				comp.Run(ctx, comp, component.FlagSet().Args()[1:])
 				return
 			}
 		}
 	}
-	component.Flag.Usage()
+	component.FlagSet().Usage()
 }
 
 func tmpl(w io.Writer, text string, data interface{}) {
