@@ -81,6 +81,10 @@ func (c *Component) Runnable() bool {
 // If output is nil, stderr is used
 func (c *Component) SetOutput(output io.Writer) {
 	c.FlagSet().SetOutput(output)
+
+	for _, c := range c.Components {
+		c.SetOutput(output)
+	}
 }
 
 var usageTemplate = `
@@ -124,8 +128,8 @@ func (c *Component) Usage() {
 
 // Passthrough is a implementation of the Run function that passes the
 // execution through the sub commands
-func Passthrough(ctx context.Context, component *Component, args []string) {
-	flagSet := component.FlagSet()
+func Passthrough(ctx context.Context, comp *Component, args []string) {
+	flagSet := comp.FlagSet()
 
 	if flag.ErrHelp == flagSet.Parse(args) {
 		return
@@ -138,10 +142,10 @@ func Passthrough(ctx context.Context, component *Component, args []string) {
 
 	name := flagSet.Arg(0)
 
-	for _, comp := range component.Components {
-		if name == comp.Name() {
-			if comp.Runnable() {
-				comp.Run(ctx, comp, flagSet.Args()[1:])
+	for _, c := range comp.Components {
+		if name == c.Name() {
+			if c.Runnable() {
+				c.Run(ctx, c, flagSet.Args()[1:])
 				return
 			}
 		}
