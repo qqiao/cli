@@ -105,13 +105,16 @@ The flags are:
 
 // Usage prints out the usage information
 func (c *Component) Usage() {
-	output := c.flagSet.Output()
+	flagSet := c.FlagSet()
+	output := flagSet.Output()
 
+	// Capture the output of the flagset so that it can be merged with the rest
+	// of the message
 	var buf bytes.Buffer
-	c.flagSet.SetOutput(&buf)
-	c.flagSet.PrintDefaults()
+	flagSet.SetOutput(&buf)
+	flagSet.PrintDefaults()
 
-	c.flagSet.SetOutput(output)
+	flagSet.SetOutput(output)
 
 	tmpl(output, usageTemplate, map[string]interface{}{
 		"component": c,
@@ -122,26 +125,28 @@ func (c *Component) Usage() {
 // Passthrough is a implementation of the Run function that passes the
 // execution through the sub commands
 func Passthrough(ctx context.Context, component *Component, args []string) {
-	if flag.ErrHelp == component.FlagSet().Parse(args) {
+	flagSet := component.FlagSet()
+
+	if flag.ErrHelp == flagSet.Parse(args) {
 		return
 	}
 
-	if component.FlagSet().NArg() < 1 {
-		component.FlagSet().Usage()
+	if flagSet.NArg() < 1 {
+		flagSet.Usage()
 		return
 	}
 
-	name := component.FlagSet().Arg(0)
+	name := flagSet.Arg(0)
 
 	for _, comp := range component.Components {
 		if name == comp.Name() {
 			if comp.Runnable() {
-				comp.Run(ctx, comp, component.FlagSet().Args()[1:])
+				comp.Run(ctx, comp, flagSet.Args()[1:])
 				return
 			}
 		}
 	}
-	component.FlagSet().Usage()
+	flagSet.Usage()
 }
 
 func tmpl(w io.Writer, text string, data interface{}) {
