@@ -83,22 +83,32 @@ func (c *Component) SetOutput(output io.Writer) {
 	c.FlagSet().SetOutput(output)
 }
 
-var usageTemplate = `{{if .component.Runnable}}Usage: {{.component.UsageLine}}{{end}}
-{{- if ne (len .component.Long) 0}}{{.component.Long | trim}}{{end}}
+var usageTemplate = `
+{{- if .component.Runnable -}}
+Usage: {{.component.UsageLine}}
+{{end}}
+{{- if ne (len .component.Long) 0 -}}
+{{.component.Long | trim}}
+{{end}}
 {{- if ne (len .component.Components) 0}}
 The components are:
-{{range .component.Components}}{{if .Runnable}}
-  {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}{{end}}
-{{if ne (len .flags) 0}}
+{{- range .component.Components}}
+{{- if .Runnable}}
+  {{.Name | printf "%-11s"}} {{.Short -}}
+{{end -}}
+{{end}}
+{{end}}
+{{- if ne (len .flags) 0}}
 The flags are:
-{{.flags}}{{end}}`
+{{.flags -}}
+{{end}}`
 
 // Usage prints out the usage information
 func (c *Component) Usage() {
 	output := c.flagSet.Output()
 
-	buf := bytes.NewBufferString("")
-	c.flagSet.SetOutput(buf)
+	var buf bytes.Buffer
+	c.flagSet.SetOutput(&buf)
 	c.flagSet.PrintDefaults()
 
 	c.flagSet.SetOutput(output)

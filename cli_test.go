@@ -22,11 +22,12 @@ import (
 	"testing"
 )
 
-const usageLine = `test [-i input]`
+const UsageLine = `test [-i input]`
+const Long = `Long usage line for the application designed to test formatting.`
 
 func TestName(t *testing.T) {
 	c := Component{
-		UsageLine: usageLine,
+		UsageLine: UsageLine,
 	}
 
 	if "test" != c.Name() {
@@ -52,7 +53,7 @@ func TestUsageFlags(t *testing.T) {
 	var buf bytes.Buffer
 
 	c := Component{
-		UsageLine: usageLine,
+		UsageLine: UsageLine,
 		Run:       func(context.Context, *Component, []string) {},
 	}
 	c.SetOutput(&buf)
@@ -71,12 +72,37 @@ The flags are:
 	}
 }
 
+func TestUsageFlagsWithLong(t *testing.T) {
+	var buf bytes.Buffer
+
+	c := Component{
+		UsageLine: UsageLine,
+		Long:      Long,
+		Run:       func(context.Context, *Component, []string) {},
+	}
+	c.SetOutput(&buf)
+	c.FlagSet().String("i", "", "input of the test component")
+	c.Usage()
+
+	expected := `Usage: test [-i input]
+Long usage line for the application designed to test formatting.
+
+The flags are:
+  -i string
+    	input of the test component
+`
+
+	if buf.String() != expected {
+		t.Errorf("Expected '%s'. got '%s'", expected, buf.String())
+	}
+}
+
 func TestUsageRunnable(t *testing.T) {
-	expectedUsageLine := fmt.Sprintf("Usage: %s", usageLine)
+	expectedUsageLine := fmt.Sprintf("Usage: %s", UsageLine)
 
 	var buf bytes.Buffer
 	c := Component{
-		UsageLine: usageLine,
+		UsageLine: UsageLine,
 		Long:      "This is the long description of the test component.",
 	}
 	c.SetOutput(&buf)
@@ -97,5 +123,42 @@ func TestUsageRunnable(t *testing.T) {
 }
 
 func TestUsageSubComponent(t *testing.T) {
-	// TODO: implement sub component handling test
+	var buf bytes.Buffer
+
+	c := Component{
+		UsageLine: UsageLine,
+		Long:      Long,
+		Run:       func(context.Context, *Component, []string) {},
+		Components: []*Component{
+			&Component{
+				UsageLine: "subcomponent1",
+				Short:     "description of subcomponent 1",
+				Run:       func(context.Context, *Component, []string) {},
+			},
+			&Component{
+				UsageLine: "subcomponent2",
+				Short:     "description of subcomponent 2",
+				Run:       func(context.Context, *Component, []string) {},
+			},
+		},
+	}
+	c.SetOutput(&buf)
+	c.FlagSet().String("i", "", "input of the test component")
+	c.Usage()
+
+	expected := `Usage: test [-i input]
+Long usage line for the application designed to test formatting.
+
+The components are:
+  subcomponent1 description of subcomponent 1
+  subcomponent2 description of subcomponent 2
+
+The flags are:
+  -i string
+    	input of the test component
+`
+
+	if buf.String() != expected {
+		t.Errorf("Expected '%s'. got '%s'", expected, buf.String())
+	}
 }
