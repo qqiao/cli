@@ -17,136 +17,150 @@ package cli
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"strings"
 	"testing"
 )
 
 const UsageLine = `test [-i input]`
 const Long = `Long usage line for the application designed to test formatting.`
 
-func TestName(t *testing.T) {
-	c := Component{
-		UsageLine: UsageLine,
+func TestComponent_Runnable(t *testing.T) {
+	tests := []struct {
+		name string
+		c    *Component
+		want bool
+	}{
+		{
+			name: "Not Runnable",
+			c:    &Component{},
+			want: false,
+		},
+		{
+			name: "Runnable",
+			c: &Component{
+				Run: Passthrough,
+			},
+			want: true,
+		},
 	}
-
-	if "test" != c.Name() {
-		t.Errorf("Expected '%s', got '%s'", "test", c.Name())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.c.Runnable(); got != tt.want {
+				t.Errorf("Component.Runnable() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
-func TestRunnable(t *testing.T) {
-	r := Component{
-		Run: func(context.Context, *Component, []string) {},
+func TestComponent_Name(t *testing.T) {
+	tests := []struct {
+		name string
+		c    *Component
+		want string
+	}{
+		{
+			name: "test",
+			c: &Component{
+				UsageLine: UsageLine,
+			},
+			want: "test",
+		},
 	}
-	if !r.Runnable() {
-		t.Errorf("Expected '%t', got '%t'", true, r.Runnable())
-	}
-
-	nr := Component{}
-	if nr.Runnable() {
-		t.Errorf("Expected '%t', got '%t'", false, nr.Runnable())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.c.Name(); got != tt.want {
+				t.Errorf("Component.Name() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 
-func TestUsageFlags(t *testing.T) {
-	var buf bytes.Buffer
-
-	c := Component{
-		UsageLine: UsageLine,
-		Run:       func(context.Context, *Component, []string) {},
-	}
-	c.SetOutput(&buf)
-	c.FlagSet().String("i", "", "input of the test component")
-	c.Usage()
-
-	expected := `Usage: test [-i input]
+func TestComponent_Usage(t *testing.T) {
+	tests := []struct {
+		name string
+		c    *Component
+		want string
+	}{
+		{
+			name: "Without Flags",
+			c: &Component{
+				UsageLine: UsageLine,
+				Run:       Passthrough,
+			},
+			want: `Usage: test [-i input]
+`,
+		},
+		{
+			name: "With Flags",
+			c: &Component{
+				UsageLine: UsageLine,
+				Run:       Passthrough,
+			},
+			want: `Usage: test [-i input]
 
 The flags are:
   -i string
     	input of the test component
-`
+`,
+		},
+		{
+			name: "Non Runnable",
+			c: &Component{
+				UsageLine: UsageLine,
+			},
+			want: `
+The flags are:
+  -i string
+    	input of the test component
+`,
+		},
+		{
+			name: "Runnable",
+			c: &Component{
+				UsageLine: UsageLine,
+				Run:       Passthrough,
+			},
+			want: `Usage: test [-i input]
 
-	if buf.String() != expected {
-		t.Errorf("Expected '%s'. got '%s'", expected, buf.String())
-	}
-}
-
-func TestUsageFlagsWithLong(t *testing.T) {
-	var buf bytes.Buffer
-
-	c := Component{
-		UsageLine: UsageLine,
-		Long:      Long,
-		Run:       func(context.Context, *Component, []string) {},
-	}
-	c.SetOutput(&buf)
-	c.FlagSet().String("i", "", "input of the test component")
-	c.Usage()
-
-	expected := `Usage: test [-i input]
+The flags are:
+  -i string
+    	input of the test component
+`,
+		},
+		{
+			name: "With Flag and Long",
+			c: &Component{
+				UsageLine: UsageLine,
+				Long:      Long,
+				Run:       Passthrough,
+			},
+			want: `Usage: test [-i input]
 Long usage line for the application designed to test formatting.
 
 The flags are:
   -i string
     	input of the test component
-`
-
-	if buf.String() != expected {
-		t.Errorf("Expected '%s'. got '%s'", expected, buf.String())
-	}
-}
-
-func TestUsageRunnable(t *testing.T) {
-	expectedUsageLine := fmt.Sprintf("Usage: %s", UsageLine)
-
-	var buf bytes.Buffer
-	c := Component{
-		UsageLine: UsageLine,
-		Long:      "This is the long description of the test component.",
-	}
-	c.SetOutput(&buf)
-
-	c.Usage()
-	usage := buf.String()
-	if strings.HasPrefix(usage, expectedUsageLine) {
-		t.Error("Non-runnable component shouldn't have a usage line")
-	}
-
-	buf.Reset()
-	c.Run = func(context.Context, *Component, []string) {}
-	c.Usage()
-	usage = buf.String()
-	if !strings.HasPrefix(usage, expectedUsageLine) {
-		t.Error("Usage line missing")
-	}
-}
-
-func TestUsageSubComponent(t *testing.T) {
-	var buf bytes.Buffer
-
-	c := Component{
-		UsageLine: UsageLine,
-		Long:      Long,
-		Run:       func(context.Context, *Component, []string) {},
-		Components: []*Component{
-			&Component{
-				UsageLine: "subcomponent1",
-				Short:     "description of subcomponent 1",
-				Run:       func(context.Context, *Component, []string) {},
-			},
-			&Component{
-				UsageLine: "subcomponent2",
-				Short:     "description of subcomponent 2",
-				Run:       func(context.Context, *Component, []string) {},
-			},
+`,
 		},
-	}
-	c.SetOutput(&buf)
-	c.FlagSet().String("i", "", "input of the test component")
-	c.Usage()
-
-	expected := `Usage: test [-i input]
+		{
+			name: "Subcomponent",
+			c: &Component{
+				UsageLine: UsageLine,
+				Long:      Long,
+				Run:       func(context.Context, *Component, []string) {},
+				Components: []*Component{
+					&Component{
+						UsageLine: "subcomponent1",
+						Short:     "description of subcomponent 1",
+						Run:       func(context.Context, *Component, []string) {},
+					},
+					&Component{
+						UsageLine: "subcomponent2",
+						Short:     "description of subcomponent 2",
+						Run:       func(context.Context, *Component, []string) {},
+					},
+				},
+			},
+			want: `Usage: test [-i input]
 Long usage line for the application designed to test formatting.
 
 The components are:
@@ -156,9 +170,22 @@ The components are:
 The flags are:
   -i string
     	input of the test component
-`
+`,
+		},
+	}
 
-	if buf.String() != expected {
-		t.Errorf("Expected '%s'. got '%s'", expected, buf.String())
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			tt.c.SetOutput(&buf)
+			if i != 0 {
+				tt.c.FlagSet().String("i", "", "input of the test component")
+			}
+			tt.c.Usage()
+
+			if got := buf.String(); got != tt.want {
+				t.Errorf("Component.Usage() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
