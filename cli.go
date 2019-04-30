@@ -18,7 +18,7 @@
 // By nesting components, one can build command line applications like: the
 // go command.
 //
-package cli
+package cli // import "github.com/qqiao/cli"
 
 import (
 	"bytes"
